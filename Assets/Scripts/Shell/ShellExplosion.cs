@@ -31,27 +31,26 @@ namespace Tanks.Complete
             for (int i = 0; i < colliders.Length; i++)
             {
                 // ... and find their rigidbody.
-                Rigidbody targetRigidbody = colliders[i].GetComponent<Rigidbody> ();
+                if (colliders[i].TryGetComponent(out Rigidbody targetRigidbody))
+                {
+                    // If they don't have a rigidbody, go on to the next collider.
+                    if (!targetRigidbody)
+                        continue;
 
-                // If they don't have a rigidbody, go on to the next collider.
-                if (!targetRigidbody)
-                    continue;
+                    // Add an explosion force.
+                    targetRigidbody.AddExplosionForce (m_ExplosionForce, transform.position, m_ExplosionRadius);
+                }
+                
+                // Find the TankHealth script associated with the rigidbody.
+                if (targetRigidbody.TryGetComponent(out ITakeDamage takeDamage))
+                {
+                    // Calculate the amount of damage the target should take based on it's distance from the shell.
+                    float damage = CalculateDamage (targetRigidbody.position);
 
-                // Add an explosion force.
-                targetRigidbody.AddExplosionForce (m_ExplosionForce, transform.position, m_ExplosionRadius);
-
-                // Find the TankHealth script associated with the rigidbody
-                IDamage targetHealth = targetRigidbody.GetComponent<IDamage> ();
-
-                // If there is no TankHealth script attached to the gameobject, go on to the next collider.
-                if (targetHealth == null)
-                    continue;
-
-                // Calculate the amount of damage the target should take based on it's distance from the shell.
-                float damage = CalculateDamage (targetRigidbody.position);
-
-                // Deal this damage to the tank.
-                targetHealth.TakeDamage (damage);
+                    // Deal this damage to the tank.
+                    takeDamage.TakeDamage (damage);
+                }
+                
             }
 
             // Unparent the particles from the shell.
